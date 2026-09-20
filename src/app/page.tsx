@@ -1,69 +1,172 @@
-import Image from "next/image";
+"use client";
+
+import { FormEvent, useEffect, useMemo, useState } from "react";
+
+type Task = {
+  id: number;
+  title: string;
+  completed: boolean;
+};
+
+type Filter = "all" | "active" | "completed";
+
+const starterTasks: Task[] = [
+  { id: 1, title: "Sketch the weekend itinerary", completed: false },
+  { id: 2, title: "Book a table for Saturday", completed: false },
+  { id: 3, title: "Water the balcony herbs", completed: true },
+];
 
 export default function Home() {
+  const [tasks, setTasks] = useState<Task[]>(() => {
+    if (typeof window === "undefined") return starterTasks;
+    const savedTasks = window.localStorage.getItem("today-tasks");
+    if (!savedTasks) return starterTasks;
+    try {
+      return JSON.parse(savedTasks) as Task[];
+    } catch {
+      return starterTasks;
+    }
+  });
+  const [draft, setDraft] = useState("");
+  const [filter, setFilter] = useState<Filter>("all");
+
+  useEffect(() => {
+    window.localStorage.setItem("today-tasks", JSON.stringify(tasks));
+  }, [tasks]);
+
+  const visibleTasks = useMemo(
+    () =>
+      tasks.filter(
+        (task) =>
+          filter === "all" ||
+          (filter === "active" ? !task.completed : task.completed)
+      ),
+    [filter, tasks]
+  );
+  const remaining = tasks.filter((task) => !task.completed).length;
+
+  function addTask(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const title = draft.trim();
+    if (!title) return;
+    setTasks((current) => [
+      { id: Date.now(), title, completed: false },
+      ...current,
+    ]);
+    setDraft("");
+  }
+
+  function toggleTask(id: number) {
+    setTasks((current) =>
+      current.map((task) =>
+        task.id === id ? { ...task, completed: !task.completed } : task
+      )
+    );
+  }
+
+  function removeTask(id: number) {
+    setTasks((current) => current.filter((task) => task.id !== id));
+  }
+
+  function clearCompleted() {
+    setTasks((current) => current.filter((task) => !task.completed));
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <main className="app-shell">
+      <section className="todo-card" aria-labelledby="page-title">
+        <header className="todo-header">
+          <div>
+            <p className="eyebrow">Sunday, September 20</p>
+            <h1 id="page-title">A little progress.</h1>
+            <p className="subtitle">Keep the day light, one task at a time.</p>
+          </div>
+          <div
+            className="progress-mark"
+            aria-label={`${remaining} tasks remaining`}
           >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            <span>{remaining}</span>
+            <small>left</small>
+          </div>
+        </header>
+
+        <form className="add-form" onSubmit={addTask}>
+          <input
+            aria-label="New task"
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            placeholder="What needs doing?"
+          />
+          <button type="submit">
+            Add task <span>+</span>
+          </button>
+        </form>
+
+        <div className="task-toolbar">
+          <div className="filters" aria-label="Filter tasks">
+            {(["all", "active", "completed"] as Filter[]).map((option) => (
+              <button
+                className={filter === option ? "filter active" : "filter"}
+                key={option}
+                type="button"
+                onClick={() => setFilter(option)}
+              >
+                {option[0].toUpperCase() + option.slice(1)}
+              </button>
+            ))}
+          </div>
+          <button
+            className="clear-button"
+            type="button"
+            onClick={clearCompleted}
           >
-            Documentation
-          </a>
+            Clear completed
+          </button>
         </div>
-      </main>
-    </div>
+
+        <ul className="task-list">
+          {visibleTasks.length ? (
+            visibleTasks.map((task) => (
+              <li
+                className={task.completed ? "task completed" : "task"}
+                key={task.id}
+              >
+                <button
+                  className="check-button"
+                  type="button"
+                  onClick={() => toggleTask(task.id)}
+                  aria-label={`Mark ${task.title} ${
+                    task.completed ? "active" : "complete"
+                  }`}
+                >
+                  {task.completed ? "✓" : ""}
+                </button>
+                <span>{task.title}</span>
+                <button
+                  className="delete-button"
+                  type="button"
+                  onClick={() => removeTask(task.id)}
+                  aria-label={`Delete ${task.title}`}
+                >
+                  ×
+                </button>
+              </li>
+            ))
+          ) : (
+            <li className="empty-state">
+              Nothing here yet. Add a small win above.
+            </li>
+          )}
+        </ul>
+
+        <footer className="todo-footer">
+          <span>
+            {remaining} {remaining === 1 ? "task" : "tasks"} to go
+          </span>
+          <span className="footer-dot">•</span>
+          <span>Make room for good things</span>
+        </footer>
+      </section>
+    </main>
   );
 }

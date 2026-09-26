@@ -196,11 +196,35 @@ GitHub repository ke `production` environment mein yeh secrets exact same names 
 
 - `DOCKERHUB_USERNAME`
 - `DOCKERHUB_TOKEN`
-- `SERVER_HOST`
-- `SERVER_USERNAME`
-- `SERVER_SSH_KEY`
+- `EC2_HOST`
+- `EC2_USERNAME`
+- `EC2_SSH_KEY`
 
 `Settings > Environments > production` mein secrets check karo. Secret values ko workflow logs mein print mat karo.
+
+### 10. EC2 server host missing
+
+SSH deployment step par yeh error aaya:
+
+```text
+Error: missing server host
+```
+
+Cause: `appleboy/ssh-action` ko `EC2_HOST` secret ki value nahi mili. Workflow mein host is tarah read hota hai:
+
+```yaml
+host: ${{ secrets.EC2_HOST }}
+```
+
+Fix: GitHub ke `production` environment mein exact name ke saath `EC2_HOST` secret add karo. Value EC2 ka public IPv4 address ya public DNS hona chahiye, example:
+
+```text
+18.123.45.67
+```
+
+Value mein `http://`, `https://`, ya extra path mat add karo. Saath mein `EC2_USERNAME` aur `EC2_SSH_KEY` bhi isi `production` environment mein configured hone chahiye.
+
+Rule: Secret names case-sensitive hote hain. Workflow ke secret name aur GitHub Environment secret name exactly same hone chahiye.
 
 ### CI aur CD parallel run hone ki problem
 

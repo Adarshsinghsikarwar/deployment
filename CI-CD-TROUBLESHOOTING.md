@@ -132,7 +132,25 @@ Result: Workflow formatting validation pass hui.
 
 Rule: GitHub Actions YAML mein tabs mix mat karo; consistent spaces use karo.
 
-### 7. CI aur CD ka difference
+### 7. SSH action version error
+
+CD run karte waqt yeh error aaya:
+
+```text
+Unable to resolve action `appleboy/ssh-action@1.2.0`, unable to find version `1.2.0`
+```
+
+Cause: GitHub Action ka release tag `v1.2.0` hai, lekin workflow mein `1.2.0` likha hua tha. GitHub Actions exact tag search karta hai, isliye action resolve nahi hua.
+
+Fix:
+
+```yaml
+uses: appleboy/ssh-action@v1.2.0
+```
+
+Rule: GitHub Action versions mein repository ka exact release tag use karo, including `v` prefix agar tag mein present ho.
+
+### 8. CI aur CD ka difference
 
 - CI code ko validate karta hai.
 - CD Docker image ko Docker Hub par push karke EC2 par deploy karta hai.

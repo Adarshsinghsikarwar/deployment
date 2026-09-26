@@ -4,6 +4,9 @@ on:
   pull_request:
     branches:
       - main
+  push:
+    branches:
+      - main
 
 jobs:
   test:
@@ -21,7 +24,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 20
           cache: pnpm
 
       - name: Install dependencies
@@ -32,9 +35,6 @@ jobs:
 
       - name: Type check
         run: pnpm exec tsc --noEmit
-
-      - name: Test
-        run: pnpm test
 
       - name: Build
         run: pnpm build

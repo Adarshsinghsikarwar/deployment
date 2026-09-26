@@ -150,7 +150,24 @@ uses: appleboy/ssh-action@v1.2.0
 
 Rule: GitHub Action versions mein repository ka exact release tag use karo, including `v` prefix agar tag mein present ho.
 
-### 8. CI aur CD ka difference
+### 8. Docker login action deprecation warning
+
+CD ke Docker login step par yeh warning dikhi:
+
+```text
+[DEP0040] DeprecationWarning: The `punycode` module is deprecated.
+Please use a userland alternative instead.
+```
+
+Cause: `docker/login-action@v3` ki internal Node.js dependency deprecated `punycode` module use kar rahi hai. Yeh warning action ke internal code se aati hai, application ya Dockerfile se nahi.
+
+Impact: Yeh warning non-blocking hai. Agar step ke end mein `Process completed with exit code 0` aaye, Docker login successful hai aur deployment continue kar sakta hai.
+
+Action: Workflow ko change karne ki zaroorat nahi hai. `docker/login-action@v3` use karte raho aur future mein action ka newer release available ho to update karo.
+
+Rule: Deprecation warning ko failure na samjho; hamesha final exit code check karo.
+
+### 9. CI aur CD ka difference
 
 - CI code ko validate karta hai.
 - CD Docker image ko Docker Hub par push karke EC2 par deploy karta hai.
@@ -158,18 +175,32 @@ Rule: GitHub Action versions mein repository ka exact release tag use karo, incl
 
 ## Important Checks
 
-### Docker Hub secret names
+### Docker login credentials missing
 
-CD login ke liye `DOCKER_USERNAME` use karta hai, lekin image tag/push ke liye `DOCKERHUB_USERNAME` use karta hai. Dono secrets configured aur same username ke liye hone chahiye, ya workflow mein ek consistent name use karo.
+CD ke Docker login step par yeh error aaya:
 
-Required secrets:
+```text
+Error: Username and password required
+```
 
-- `DOCKER_USERNAME`
-- `DOCKER_PASSWORD`
+Cause: Login action ko username ya password empty mil raha tha. Workflow mein Docker credentials ke liye inconsistent secret names use ho rahe the.
+
+Fix: Login aur image tag dono ke liye same username secret use kiya:
+
+```yaml
+username: ${{ secrets.DOCKERHUB_USERNAME }}
+password: ${{ secrets.DOCKERHUB_TOKEN }}
+```
+
+GitHub repository ke `production` environment mein yeh secrets exact same names ke saath configure hone chahiye:
+
 - `DOCKERHUB_USERNAME`
+- `DOCKERHUB_TOKEN`
 - `SERVER_HOST`
 - `SERVER_USERNAME`
 - `SERVER_SSH_KEY`
+
+`Settings > Environments > production` mein secrets check karo. Secret values ko workflow logs mein print mat karo.
 
 ### CI aur CD parallel run hone ki problem
 

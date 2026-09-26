@@ -226,6 +226,36 @@ Value mein `http://`, `https://`, ya extra path mat add karo. Saath mein `EC2_US
 
 Rule: Secret names case-sensitive hote hain. Workflow ke secret name aur GitHub Environment secret name exactly same hone chahiye.
 
+### 11. EC2 Docker socket permission denied
+
+SSH connection ke baad CD par yeh error aaya:
+
+```text
+permission denied while trying to connect to the Docker API at unix:///var/run/docker.sock
+```
+
+Cause: SSH se connected EC2 user ke paas Docker socket access nahi tha. SSH successful tha, lekin user Docker commands directly run nahi kar sakta tha.
+
+Fix: `cd.yml` ke EC2 deployment script mein remote Docker commands ke aage `sudo` add kiya:
+
+```bash
+sudo docker pull IMAGE
+sudo docker stop todo-app || true
+sudo docker rm todo-app || true
+sudo docker run -d --name todo-app IMAGE
+sudo docker image prune -f
+```
+
+Alternative permanent fix: EC2 par user ko Docker group mein add karo, phir logout/login karo:
+
+```bash
+sudo usermod -aG docker $USER
+```
+
+Uske baad new SSH session open karna zaroori hai. Default EC2 users ke liye `sudo docker` use karna simpler hai.
+
+Rule: SSH connect hona aur Docker permission hona alag checks hain. Dono verify karo.
+
 ### CI aur CD parallel run hone ki problem
 
 Pehle dono workflows `main` push par directly trigger hote the. Isliye CD, CI ke complete hone ka wait nahi karta tha. CI fail hone par bhi CD deploy attempt kar sakta tha.

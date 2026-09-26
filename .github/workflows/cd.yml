@@ -44,17 +44,17 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            docker pull \
+            sudo docker pull \
               ${{ secrets.DOCKERHUB_USERNAME }}/todo-app:${{ github.event.workflow_run.head_sha }}
 
-            docker stop todo-app || true
+            sudo docker stop todo-app || true
 
-            docker rm todo-app || true
+            sudo docker rm todo-app || true
 
-            docker run -d \
+            sudo docker run -d \
               --name todo-app \
               -p 3000:3000 \
               --restart unless-stopped \
               ${{ secrets.DOCKERHUB_USERNAME }}/todo-app:${{ github.event.workflow_run.head_sha }}
 
-            docker image prune -f
+            sudo docker image prune -f
